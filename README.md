@@ -242,9 +242,9 @@ This project is licensed under the ISC License - see the [LICENSE](LICENSE) file
 
 ## 👨‍💻 Author
 
-**Rakshit Raj**
+**Rakshit Raj** & **Aryan Amit Arya**
 
-- GitHub: [@RakshitRajVIT](https://github.com/RakshitRajVIT)
+- GitHub: [@RakshitRajVIT](https://github.com/RakshitRajVIT) [@RelaxItsAryan](https://github.com/RelaxItsAryan)
 
 ---
 
@@ -265,3 +265,4 @@ Made with ❤️ for better healthcare accessibility
 **⭐ Star this repo if you find it helpful!**
 
 </div>
+
