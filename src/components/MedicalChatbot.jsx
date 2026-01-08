@@ -1,72 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Heart, Activity, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Heart, Activity } from 'lucide-react';
 
-// OpenAI API Configuration
-const OPENAI_API_KEY = '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';
+// Medical Intents Database
 
-const SYSTEM_PROMPT = `You are a helpful and empathetic Medical Assistant chatbot. Your role is to:
-1. Provide general health information and guidance
-2. Help users understand common symptoms and when to seek medical attention
-3. Offer first-aid advice for minor issues
-4. Guide users on scheduling appointments and clinic information
-5. Recognize emergency situations and urgently direct users to call 911
 
-Important guidelines:
-- Always be empathetic and supportive
-- Clearly state that you provide general information only, not medical diagnoses
-- For any serious symptoms, always recommend consulting a healthcare professional
-- For emergencies (chest pain, difficulty breathing, severe bleeding, etc.), immediately advise calling 911
-- Keep responses concise but informative
-- Use simple language that patients can understand
 
-Clinic Information:
-- Hours: Monday-Friday 8 AM - 6 PM, Saturday 9 AM - 2 PM, Sunday Closed
-- Appointment Line: +1-555-HEALTH (432-584)
-- Emergency services available 24/7
-- We accept Blue Cross, Aetna, UnitedHealthcare, and Medicare`;
 
-async function getOpenAIResponse(messages) {
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          ...messages
-        ],
-        max_tokens: 500,
-        temperature: 0.7
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error('API request failed');
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
-  } catch (error) {
-    console.error('OpenAI API Error:', error);
-    return "I'm sorry, I'm having trouble connecting right now. For urgent medical concerns, please call 911 or visit your nearest emergency room. For non-urgent matters, please try again in a moment.";
-  }
-}
 
 function MedicalChatbot() {
   const [messages, setMessages] = useState([
     {
       type: 'bot',
-      text: "Hello! I'm your Medical Assistant powered by AI. How can I help you today? You can ask me about symptoms, health concerns, appointments, or general medical information.",
+      text: "Hello! I'm your Medical Assistant. How can I help you today?",
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [conversationHistory, setConversationHistory] = useState([]);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -77,45 +26,51 @@ function MedicalChatbot() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+const handleSend = async () => {
+  if (!input.trim()) return;
 
-    const userMessage = {
-      type: 'user',
-      text: input,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    setMessages(prev => [...prev, userMessage]);
-    
-    const newHistory = [...conversationHistory, { role: 'user', content: input }];
-    setConversationHistory(newHistory);
-    setInput('');
-    setIsLoading(true);
-
-    try {
-      const botResponse = await getOpenAIResponse(newHistory);
-      
-      const botMessage = {
-        type: 'bot',
-        text: botResponse,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages(prev => [...prev, botMessage]);
-      setConversationHistory(prev => [...prev, { role: 'assistant', content: botResponse }]);
-    } catch (error) {
-      const errorMessage = {
-        type: 'bot',
-        text: "I'm sorry, I encountered an error. Please try again. For urgent medical concerns, please call 911.",
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
+  const userMessage = {
+    type: 'user',
+    text: input,
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   };
 
+  setMessages(prev => [...prev, userMessage]);
+
+  const userInput = input;
+  setInput('');
+
+  try {
+    const res = await fetch("http://localhost:5000/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: userInput })
+    });
+
+    const data = await res.json();
+
+    const botMessage = {
+      type: 'bot',
+      text: data.reply || "AI is currently unavailable.",
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setMessages(prev => [...prev, botMessage]);
+
+  } catch (err) {
+    setMessages(prev => [...prev, {
+      type: 'bot',
+      text: "Server error. Please try again later.",
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }]);
+  }
+};
+
+
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !isLoading) {
+    if (e.key === 'Enter') {
       handleSend();
     }
   };
@@ -126,6 +81,7 @@ function MedicalChatbot() {
     'Emergency contact',
     'Clinic hours'
   ];
+
 
     return (
   <div className="min-h-screen bg-gradient-to-br from-[#020617] via-[#020617] to-[#020617] flex items-center justify-center p-6">
@@ -179,57 +135,6 @@ function MedicalChatbot() {
               </div>
 
             </div>
-          ))}
-          {isLoading && (
-            <div className="flex gap-3 flex-row">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-cyan-500 to-blue-600">
-                <Bot className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex flex-col items-start">
-                <div className="rounded-2xl px-4 py-3 bg-white text-gray-800 shadow-md rounded-tl-none">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                    <span className="text-sm text-gray-500">Thinking...</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-        <div className="px-6 py-3 bg-white border-t border-gray-200">
-          <div className="flex gap-2 flex-wrap">
-            {quickActions.map((action, idx) => (
-              <button
-                key={idx}
-                onClick={() => setInput(action)}
-                disabled={isLoading}
-                className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm rounded-full transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {action}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="p-6 bg-white border-t border-gray-200">
-          <div className="flex gap-3">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              disabled={isLoading}
-              placeholder="Type your health question here..."
-              className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-colors disabled:bg-gray-100"
-            />
-            <button
-              onClick={handleSend}
-              disabled={isLoading || !input.trim()}
-              className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-200 flex items-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-              {isLoading ? 'Sending...' : 'Send'}
-            </button>
 
           </div>
         ))}
