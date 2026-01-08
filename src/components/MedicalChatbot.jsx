@@ -41,7 +41,7 @@ const handleSend = async () => {
   setInput('');
 
   try {
-    const res = await fetch("https://backend-1-f58a.onrender.com", {
+    const res = await fetch("https://backend-1-f58a.onrender.com/chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
